@@ -1,0 +1,198 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Movie Tracker</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Arial', sans-serif;
+        }
+
+        body {
+            background: #f0f0f0;
+            padding: 20px;
+        }
+
+        nav {
+            margin-bottom: 20px;
+        }
+
+        nav ul {
+            list-style: none;
+            display: flex;
+            gap: 20px;
+        }
+
+        nav a {
+            text-decoration: none;
+            color: #333;
+            padding: 10px;
+            border-radius: 5px;
+            transition: background 0.3s;
+        }
+
+        nav a:hover {
+            background: #ddd;
+        }
+
+        .section {
+            display: none;
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+            max-width: 600px;
+            margin: 0 auto;
+        }
+
+        .section.active {
+            display: block;
+        }
+
+        #movieForm {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        input, textarea {
+            padding: 10px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            font-size: 16px;
+        }
+
+        button {
+            padding: 12px;
+            background: #007bff;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 16px;
+        }
+
+        .history-entry {
+            padding: 15px;
+            border-bottom: 1px solid #eee;
+            margin-bottom: 10px;
+        }
+
+        .meta {
+            color: #666;
+            font-size: 0.9em;
+            margin: 5px 0;
+            display: flex;
+            gap: 15px;
+        }
+
+        .description {
+            color: #444;
+            margin-top: 10px;
+        }
+    </style>
+</head>
+<body>
+    <nav>
+        <ul>
+            <li><a href="#" onclick="showSection('current')">Current Movie</a></li>
+            <li><a href="#" onclick="showSection('history')">History</a></li>
+        </ul>
+    </nav>
+
+    <div class="container">
+        <!-- Current Movie Section -->
+        <div id="current" class="section active">
+            <h1>Add Movie</h1>
+            <form id="movieForm">
+                <input type="text" id="title" placeholder="Movie title" required>
+                <textarea id="description" placeholder="Description" rows="3"></textarea>
+                <input type="date" id="date" required>
+                <button type="submit">Add Movie</button>
+            </form>
+        </div>
+
+        <!-- History Section -->
+        <div id="history" class="section">
+            <h1>Watching History</h1>
+            <div id="historyList"></div>
+        </div>
+    </div>
+
+    <script>
+        // Movie storage system
+        const movieStore = {
+            movies: JSON.parse(localStorage.getItem('movies')) || [],
+            
+            save() {
+                localStorage.setItem('movies', JSON.stringify(this.movies));
+            },
+            
+            addMovie(movie) {
+                this.movies.push({
+                    ...movie,
+                    id: Date.now(),
+                    watchedDate: new Date().toISOString()
+                });
+                this.save();
+            }
+        };
+
+        // Display history entries
+        function displayHistory() {
+            const historyList = document.getElementById('historyList');
+            historyList.innerHTML = movieStore.movies
+                .sort((a, b) => new Date(b.watchedDate) - new Date(a.watchedDate))
+                .map(movie => `
+                    <div class="history-entry">
+                        <h3>${movie.title}</h3>
+                        <div class="meta">
+                            <span class="date">📅 ${new Date(movie.watchedDate).toLocaleDateString()}</span>
+                            <span class="time">⏰ ${new Date(movie.watchedDate).toLocaleTimeString()}</span>
+                        </div>
+                        ${movie.description ? <p class="description">${movie.description}</p> : ''}
+                    </div>
+                `).join('');
+        }
+
+        // Form submission handler
+        document.getElementById('movieForm').addEventListener('submit', (e) => {
+            e.preventDefault();
+            
+            const newMovie = {
+                title: document.getElementById('title').value.trim(),
+                description: document.getElementById('description').value.trim(),
+                date: document.getElementById('date').value || new Date().toISOString()
+            };
+
+            if (!newMovie.title) {
+                alert('Please enter a movie title');
+                return;
+            }
+
+            movieStore.addMovie(newMovie);
+            displayHistory();
+            e.target.reset();
+        });
+
+        // Section navigation
+        function showSection(sectionId) {
+            document.querySelectorAll('.section').forEach(section => {
+                section.classList.remove('active');
+            });
+            document.getElementById(sectionId).classList.add('active');
+            
+            if (sectionId === 'history') {
+                displayHistory();
+            }
+        }
+
+        // Initial load
+        displayHistory();
+    </script>
+</body>
+</html>
